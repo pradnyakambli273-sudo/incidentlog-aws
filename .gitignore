@@ -1,0 +1,6 @@
+*.zip
+key.json
+payload.json
+ownership.json
+publicaccess.json
+trust-policy.json

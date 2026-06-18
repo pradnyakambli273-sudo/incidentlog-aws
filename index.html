@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IncidentLog</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0f0f13; color: #fff; min-height: 100vh; }
+
+    nav {
+      background: #0f0f13;
+      border-bottom: 1px solid #1e1e2e;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+    .logo span { color: #f76a6a; }
+    .nav-stack { font-size: 12px; color: #444; }
+
+    .main { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+
+    .header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
+    .header-row h1 { font-size: 26px; font-weight: 700; }
+    .header-row p { font-size: 13px; color: #555; margin-top: 4px; }
+
+    .stats { display: flex; gap: 12px; }
+    .stat-pill {
+      font-size: 12px; font-weight: 600; padding: 6px 14px;
+      border-radius: 20px; border: 1px solid #1e1e2e;
+      background: #16161f;
+    }
+    .stat-pill.critical { border-color: #f76a6a44; color: #f76a6a; }
+    .stat-pill.warning { border-color: #f7c46a44; color: #f7c46a; }
+    .stat-pill.info { border-color: #6ab4f744; color: #6ab4f7; }
+
+    .compose-box {
+      background: #16161f;
+      border: 1px solid #1e1e2e;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 40px;
+      transition: border-color 0.2s;
+    }
+    .compose-box:focus-within { border-color: #f76a6a; }
+    .compose-box textarea {
+      width: 100%; background: transparent; border: none; outline: none;
+      color: #fff; font-size: 15px; font-family: 'Segoe UI', sans-serif;
+      resize: none; min-height: 80px; line-height: 1.6;
+    }
+    .compose-box textarea::placeholder { color: #444; }
+
+    .compose-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 12px; padding-top: 12px; border-top: 1px solid #1e1e2e;
+      flex-wrap: wrap; gap: 10px;
+    }
+
+    .severity-picker { display: flex; gap: 8px; }
+    .sev-btn {
+      font-size: 12px; font-weight: 600; padding: 6px 14px;
+      border-radius: 20px; border: 1px solid #2a2a3e;
+      background: transparent; color: #666; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .sev-btn.active-Critical { background: #f76a6a22; border-color: #f76a6a; color: #f76a6a; }
+    .sev-btn.active-Warning  { background: #f7c46a22; border-color: #f7c46a; color: #f7c46a; }
+    .sev-btn.active-Info     { background: #6ab4f722; border-color: #6ab4f7; color: #6ab4f7; }
+
+    .log-btn {
+      background: #f76a6a; color: #fff; border: none; border-radius: 10px;
+      padding: 9px 22px; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: background 0.2s, transform 0.1s;
+    }
+    .log-btn:hover { background: #e05555; }
+    .log-btn:active { transform: scale(0.97); }
+    .log-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+    .filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-btn {
+      font-size: 12px; padding: 5px 14px; border-radius: 20px;
+      border: 1px solid #1e1e2e; background: #16161f;
+      color: #666; cursor: pointer; transition: all 0.15s;
+    }
+    .filter-btn.active { background: #1e1e2e; color: #fff; border-color: #444; }
+
+    .section-title { font-size: 12px; font-weight: 600; color: #444; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+
+    .card {
+      background: #16161f; border: 1px solid #1e1e2e; border-radius: 16px;
+      padding: 20px; position: relative; transition: border-color 0.2s, transform 0.2s;
+      min-height: 170px; display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .card:hover { transform: translateY(-2px); }
+    .card.Critical { border-left: 3px solid #f76a6a; }
+    .card.Warning  { border-left: 3px solid #f7c46a; }
+    .card.Info     { border-left: 3px solid #6ab4f7; }
+
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .sev-badge {
+      font-size: 10px; font-weight: 700; padding: 3px 10px;
+      border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .badge-Critical { background: #f76a6a22; color: #f76a6a; }
+    .badge-Warning  { background: #f7c46a22; color: #f7c46a; }
+    .badge-Info     { background: #6ab4f722; color: #6ab4f7; }
+
+    .status-badge {
+      font-size: 10px; font-weight: 600; padding: 3px 10px;
+      border-radius: 20px; cursor: pointer; transition: all 0.15s;
+    }
+    .status-Open     { background: #1e1e2e; color: #888; }
+    .status-Resolved { background: #1e3e2e; color: #6af7a0; }
+
+    .card-content { font-size: 14px; color: #ccc; line-height: 1.6; word-break: break-word; flex: 1; }
+
+    .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+    .card-date { font-size: 11px; color: #444; }
+    .card-actions { display: flex; gap: 6px; opacity: 0; transition: opacity 0.2s; }
+    .card:hover .card-actions { opacity: 1; }
+
+    .icon-btn {
+      background: #1e1e2e; border: none; border-radius: 8px;
+      width: 28px; height: 28px; display: flex; align-items: center;
+      justify-content: center; cursor: pointer; font-size: 13px; transition: background 0.2s;
+    }
+    .icon-btn:hover { background: #2a2a3e; }
+    .icon-btn.delete:hover { background: #3e1e1e; }
+
+    .empty-state { text-align: center; padding: 80px 20px; color: #333; grid-column: 1/-1; }
+    .empty-state .emoji { font-size: 48px; margin-bottom: 16px; }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #16161f; border: 1px solid #2a2a3e;
+      color: #fff; padding: 12px 20px; border-radius: 12px;
+      font-size: 13px; opacity: 0; transform: translateY(10px);
+      transition: all 0.3s; pointer-events: none; z-index: 999;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    .edit-input {
+      width: 100%; background: transparent; border: none; outline: none;
+      color: #fff; font-size: 14px; font-family: 'Segoe UI', sans-serif;
+      resize: none; line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Incident<span>Log</span></div>
+  <div class="nav-stack">AWS Lambda · API Gateway · DynamoDB · S3</div>
+</nav>
+
+<div class="main">
+  <div class="header-row">
+    <div>
+      <h1>Incident Dashboard</h1>
+      <p id="note-count">Loading incidents...</p>
+    </div>
+    <div class="stats">
+      <div class="stat-pill critical" id="stat-critical">● Critical: 0</div>
+      <div class="stat-pill warning"  id="stat-warning">● Warning: 0</div>
+      <div class="stat-pill info"     id="stat-info">● Info: 0</div>
+    </div>
+  </div>
+
+  <div class="compose-box">
+    <textarea id="note-input" placeholder="Describe the incident..." maxlength="500"></textarea>
+    <div class="compose-footer">
+      <div class="severity-picker">
+        <button class="sev-btn active-Critical" onclick="setSeverity('Critical')">🔴 Critical</button>
+        <button class="sev-btn" onclick="setSeverity('Warning')">🟡 Warning</button>
+        <button class="sev-btn" onclick="setSeverity('Info')">🔵 Info</button>
+      </div>
+      <button class="log-btn" id="save-btn" onclick="createNote()">Log Incident</button>
+    </div>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" onclick="setFilter('All', this)">All</button>
+    <button class="filter-btn" onclick="setFilter('Critical', this)">Critical</button>
+    <button class="filter-btn" onclick="setFilter('Warning', this)">Warning</button>
+    <button class="filter-btn" onclick="setFilter('Info', this)">Info</button>
+    <button class="filter-btn" onclick="setFilter('Open', this)">Open</button>
+    <button class="filter-btn" onclick="setFilter('Resolved', this)">Resolved</button>
+  </div>
+
+  <div class="section-title" id="section-label">All Incidents</div>
+  <div class="grid" id="grid"><div style="color:#444;padding:40px;grid-column:1/-1">Loading...</div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API = "https://5au5jyfvkb.execute-api.ap-south-1.amazonaws.com/prod";
+  let selectedSeverity = 'Critical';
+  let allIncidents = [];
+  let activeFilter = 'All';
+
+  function setSeverity(s) {
+    selectedSeverity = s;
+    document.querySelectorAll('.sev-btn').forEach(b => {
+      b.className = 'sev-btn';
+      if (b.textContent.includes(s)) b.className = `sev-btn active-${s}`;
+    });
+  }
+
+  function setFilter(f, el) {
+    activeFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('section-label').textContent =
+      f === 'All' ? 'All Incidents' : `${f} Incidents`;
+    renderGrid(allIncidents);
+  }
+
+  function formatDate(iso) {
+    return new Date(iso).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function escapeHtml(text) {
+    return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  async function loadNotes() {
+    try {
+      const res = await fetch(API + "/notes");
+      allIncidents = await res.json();
+      updateStats(allIncidents);
+      renderGrid(allIncidents);
+      document.getElementById('note-count').textContent =
+        `${allIncidents.length} incident${allIncidents.length !== 1 ? 's' : ''} logged`;
+    } catch(e) {
+      document.getElementById('grid').innerHTML = '<div style="color:#f76a6a;padding:40px;grid-column:1/-1">Failed to load incidents.</div>';
+    }
+  }
+
+  function updateStats(incidents) {
+    const c = incidents.filter(i => i.severity === 'Critical').length;
+    const w = incidents.filter(i => i.severity === 'Warning').length;
+    const inf = incidents.filter(i => i.severity === 'Info').length;
+    document.getElementById('stat-critical').textContent = `● Critical: ${c}`;
+    document.getElementById('stat-warning').textContent  = `● Warning: ${w}`;
+    document.getElementById('stat-info').textContent     = `● Info: ${inf}`;
+  }
+
+  function renderGrid(incidents) {
+    const filtered = incidents.filter(i => {
+      if (activeFilter === 'All') return true;
+      if (activeFilter === 'Open' || activeFilter === 'Resolved') return i.status === activeFilter;
+      return i.severity === activeFilter;
+    });
+
+    const grid = document.getElementById('grid');
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="empty-state"><div class="emoji">✅</div><p>No incidents found.</p></div>`;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(n => `
+      <div class="card ${n.severity}" id="card-${n.noteId}">
+        <div class="card-top">
+          <span class="sev-badge badge-${n.severity}">${n.severity}</span>
+          <span class="status-badge status-${n.status}" onclick="toggleStatus('${n.noteId}', '${n.status}')" title="Click to toggle">${n.status}</span>
+        </div>
+        <div class="card-content" id="content-${n.noteId}">${escapeHtml(n.content)}</div>
+        <div class="card-footer">
+          <span class="card-date">${formatDate(n.createdAt)}</span>
+          <div class="card-actions">
+            <button class="icon-btn" onclick="editNote('${n.noteId}')" title="Edit">✏️</button>
+            <button class="icon-btn delete" onclick="deleteNote('${n.noteId}')" title="Delete">🗑️</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function createNote() {
+    const input = document.getElementById('note-input');
+    const content = input.value.trim();
+    if (!content) return;
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true; btn.textContent = 'Logging...';
+    try {
+      await fetch(API + "/notes", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ content, severity: selectedSeverity })
+      });
+      input.value = '';
+      showToast('✅ Incident logged');
+      loadNotes();
+    } catch(e) { showToast('❌ Failed to log'); }
+    btn.disabled = false; btn.textContent = 'Log Incident';
+  }
+
+  async function deleteNote(noteId) {
+    if (!confirm('Delete this incident?')) return;
+    try {
+      await fetch(API + "/notes/" + noteId, { method: "DELETE" });
+      showToast('🗑️ Incident deleted');
+      loadNotes();
+    } catch(e) { showToast('❌ Failed to delete'); }
+  }
+
+  async function toggleStatus(noteId, current) {
+    const newStatus = current === 'Open' ? 'Resolved' : 'Open';
+    try {
+      await fetch(API + "/notes/" + noteId, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ status: newStatus })
+      });
+      showToast(newStatus === 'Resolved' ? '✅ Marked resolved' : '🔄 Reopened');
+      loadNotes();
+    } catch(e) { showToast('❌ Failed to update'); }
+  }
+
+  function editNote(noteId) {
+    const contentDiv = document.getElementById('content-' + noteId);
+    const current = contentDiv.textContent;
+    contentDiv.innerHTML = `<textarea class="edit-input" rows="3">${current}</textarea>`;
+    const ta = contentDiv.querySelector('textarea');
+    ta.focus();
+    ta.addEventListener('blur', () => saveEdit(noteId, ta.value, current));
+  }
+
+  async function saveEdit(noteId, newContent, original) {
+    if (newContent.trim() === original.trim()) {
+      document.getElementById('content-' + noteId).textContent = original;
+      return;
+    }
+    try {
+      await fetch(API + "/notes/" + noteId, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ content: newContent.trim() })
+      });
+      showToast('✏️ Incident updated');
+      loadNotes();
+    } catch(e) { showToast('❌ Failed to update'); }
+  }
+
+  loadNotes();
+</script>
+</body>
+</html>
