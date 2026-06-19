@@ -119,6 +119,3 @@ aws s3 cp index.html s3://YOUR_BUCKET_NAME/ --acl public-read
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 
 ---
-
-## Authors
-Vidyalankar Institute of Technology, Mumbai — Third Year B.Tech, Electronics and Telecommunication
